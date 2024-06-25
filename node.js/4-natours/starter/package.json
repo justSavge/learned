@@ -1,0 +1,35 @@
+{
+  "name": "giao",
+  "version": "1.0.0",
+  "description": "learn node,just keep going",
+  "main": "server.js",
+  "scripts": {
+    "build": "cross-env NODE_ENV=production",
+    "parentScript": "cross-env NODE_ENV=\"production\" npm run childScript",
+    "childScript": "cross-env-shell \"nodemon server.js\"",
+    "debug": "ndb server.js"
+  },
+  "author": "lijun0v0",
+  "license": "ISC",
+  "dependencies": {
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.4.5",
+    "eslint": "^8.57.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "eslint-plugin-react": "^7.34.1",
+    "express": "^4.18.3",
+    "mongoose": "^5.2.2",
+    "morgan": "^1.10.0",
+    "prettier": "^3.2.5",
+    "puppeteer": "^22.6.5",
+    "slugify": "^1.6.6",
+    "validator": "^13.11.0"
+  },
+  "devDependencies": {
+    "webpack-cli": "^5.1.4"
+  }
+}

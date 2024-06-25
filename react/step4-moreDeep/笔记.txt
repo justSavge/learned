@@ -1,0 +1,125 @@
+专门为了这一节搞了个笔记
+高级React
+
+
+1.React的组件和jsx
+jsx是怎么被响应为一个React元素的
+很简单，React识别到jsx就会调用函数  React.createElement()
+such as
+<div className='full'><span>666</span></div>
+调用以下
+React.createElement('div',
+  {className:'full'},
+  React.createElement('span',null,'666')
+)
+过程：组件->组件实例->React元素->Dom元素（html）
+
+
+2.React的渲染过程
+渲染触发->渲染阶段->提交阶段->浏览器描述
+更新state以后->React调用组件函数计算Dom该如何更新->React写入Dom(更新，插入，删除)->浏览器描述
+注意:在React当中，渲染不是发生再更新dom或者再屏幕上显示元素的。渲染发生在React内部，不会再视觉（屏幕）上变化.
+
+
+3.React的渲染触发
+一.第一次载入app
+二.state变化
+渲染过程被整个app触发
+关于state变化，看起来state变化只涉及它自己和（所有的）子组件，实际上会对整个树进行查询
+React不会立刻执行，再state更新以后，只会再js引擎有‘空闲时间’的时候更新（只是这个等待时间短暂到只有几毫秒），还有一些批处理？ 的情况。
+
+
+4.渲染阶段
+触发渲染的组件实例->React元素->形成新的虚拟Dom(重新渲染自己（被修改的React元素）和自己的子组件)
+然后是React和解器（Reconciliation,一个React内置的模块）的舞台了
+Reconciliation->调解虚拟Dom和纤维树(fiber tree)->得到更新后的纤维树->得到Dom更新列表
+Tip:为什么不直接修改Dom,而是修改虚拟Dom，又修改纤维树？
+应为修改虚拟Dom，“cheaper and fast”.
+Tip:什么是fiber tree?
+fiber tree有每个组件,Dom元素的fiber,fiber有其props,state,queue of work,Reconciliation也就会和它对账。每次渲染不一定改变fiber tree.
+fiber尽可能小的减少修改以减少宝贵的Dom修改.
+还是异步进行（意味着可以对每个操作控制）渲染操作。
+
+
+5.提交阶段
+fiber tree将更新的Dom列表提交到Dom,然后Dom就会按照提交的一个接一个的修改。注意：这个过程是同步的，以确保UI的一致性。
+提交完了以后，workInProgress fiber tree就会成为下一个渲染周期的current (当前)tree.
+
+注意注意注意！！！
+以上的提交过程都是ReactDom完成（同步进行插入，更新，删除操作）.因为React不与任何浏览器Dom交互（为了保持独立性）
+其他：除了ReactDom,还有React Native(用于开发ios,安卓移动应用程序？意味着换个提交的就可以做应用？)，remotion(制作视频？)，so on...
+
+重点补充，React如何获得diffing(更新列表)：
+diffing有两个前提
+1.2个不同类型元素的生产树
+2.具有稳定props的元素保持不变
+
+例子：
+fiber tree
+  <head><full/></head> 
+虚拟Dom tree
+  <header><full/></header>
+其(head,full)全部修改，应为他们在树的位置发生了改变(full的父组件，head更不用说)
+也就是更新列表有他两
+细节，full的state重置
+二。
+fiber tree
+  <head className='active' wait={1}><full/></head> 
+虚拟Dom tree
+  <head className='hidden' wait={5}><full/><head>
+仅修改head的props,full一点不变  
+tips:full的state不变
+
+
+more:
+key props:
+key props是一个具有唯一标识功能的props.
+有什么用呢？
+  如
+  <ul>
+    <li>1</li>
+    <li>2</li>
+  </ul>
+  变化为
+  <ul>
+    <li>1</li>
+    <li>2</li>
+    <li>3</li>
+  </ul>
+的时候，不止会重新渲染<li>3</li>,而会将3个li全部重新渲染，因为这里破坏了树的结构。
+如果有加上key props,告诉React,那么就
+  <ul>
+    <li key='1'>1</li>
+    <li key='2'>2</li>
+  </ul>
+  变为
+  <ul>
+    <li key='1'>1</li>
+    <li key='2'>2</li>
+    <li key='3'>3</li>
+  </ul>  
+那么只会渲染<li key='3'>3</li>
+有时候也可修改key props达到重置的目的
+
+
+渲染的一些逻辑（或者说一些思路，允许，不允许
+1.在组件渲染中，我们要求函数更加"纯"=>给定相同的props,返回相同的JSX,“纯”是指函数不会对：
+不要用api.
+超过自己控制范围的数值进行变化。（一个经典的就是不能对props进行改变）
+不能使用timmer,计时器.
+不要更新state,以免产生循环。
+当然，使用一些随机数等方法是无可厚非的，毕竟不可能真的没有副作用，没有副作用的函数本质上没有意义。
+以上英译，或言语错乱。
+
+
+事件处理（批处理）
+我们都知道，每次更新state都会重新渲染一次对应组件。
+当时如果更新多个state呢？比如更新3个state,会重新渲染3次吗。
+不。
+只会渲染一次。
+在调解器将修改内容协同到fiber tree的以后，将他们一同提交给reactDom.
+然后渲染一次。也就是说这是一个异步的过程。没错，举个例子，在一个事件处理函数当中存在一个console.log(x)(x为一个状态)，当我们修改以后输出控制台会发现这个输出的还是原来的结果。说的有点复杂，其实就是异步操作。在React,称其为不新鲜的state.
+那么非要使用原来的state又怎么办呢，在setState当中使用回调函数即可。
+在React18当中提供了一个特性。自动批处理
+当我们使用计时器，promise的时候，操作不会进入批处理，而是会一个接一个的进行操作，如使用promise那么就会渲染三次。而在React17是没有的。（补充：还有使用Dom事件的时候，如el.addEventListener()）  
+
